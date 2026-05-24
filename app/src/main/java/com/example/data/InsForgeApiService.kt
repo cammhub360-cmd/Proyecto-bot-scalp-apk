@@ -10,28 +10,28 @@ import java.util.concurrent.TimeUnit
 
 interface InsForgeApiService {
 
-    @GET("rest/v1/bot_config")
+    @GET("api/database/records/bot_config")
     suspend fun getBotConfig(
         @Header("apikey") apiKey: String,
         @Header("Authorization") bearer: String,
         @Query("select") select: String = "*"
     ): List<Map<String, Any>>
 
-    @PATCH("rest/v1/bot_config")
+    @PATCH("api/database/records/bot_config")
     suspend fun updateBotConfig(
         @Header("apikey") apiKey: String,
         @Header("Authorization") bearer: String,
-        @Query("id") id: String,
+        @Query("id") id: String, // Note: Use filter query format if needed
         @Body config: Map<String, Any>
     )
 
-    @GET("rest/v1/open_positions")
+    @GET("api/database/records/open_positions")
     suspend fun getOpenPositions(
         @Header("apikey") apiKey: String,
         @Header("Authorization") bearer: String
     ): List<ActiveTrade>
 
-    @GET("rest/v1/system_logs")
+    @GET("api/database/records/system_logs")
     suspend fun getLogs(
         @Header("apikey") apiKey: String,
         @Header("Authorization") bearer: String,
