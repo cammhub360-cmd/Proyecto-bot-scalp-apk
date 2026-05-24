@@ -19,9 +19,9 @@ class BotViewModel(application: Application) : AndroidViewModel(application) {
 
     private val prefs = application.getSharedPreferences("bot_prefs", Context.MODE_PRIVATE)
 
-    // Network & URL state
-    private val _baseUrl = MutableStateFlow(prefs.getString("base_url", "http://10.0.2.2:8080") ?: "http://10.0.2.2:8080")
-    val baseUrl: StateFlow<String> = _baseUrl.asStateFlow()
+    // Key configuration inputs
+    val apiKeyValue = MutableStateFlow(prefs.getString("api_key", "") ?: "")
+    val apiSecretValue = MutableStateFlow(prefs.getString("api_secret", "") ?: "")
 
     private val _isConnecting = MutableStateFlow(false)
     val isConnecting: StateFlow<Boolean> = _isConnecting.asStateFlow()
@@ -29,12 +29,8 @@ class BotViewModel(application: Application) : AndroidViewModel(application) {
     private val _isServerOnline = MutableStateFlow(false)
     val isServerOnline: StateFlow<Boolean> = _isServerOnline.asStateFlow()
 
-    private val _isLocalDemoActive = MutableStateFlow(true)
+    private val _isLocalDemoActive = MutableStateFlow(prefs.getBoolean("is_demo", true))
     val isLocalDemoActive: StateFlow<Boolean> = _isLocalDemoActive.asStateFlow()
-
-    // Key configuration inputs
-    val apiKeyValue = MutableStateFlow(prefs.getString("api_key", "") ?: "")
-    val apiSecretValue = MutableStateFlow(prefs.getString("api_secret", "") ?: "")
 
     // Bot State
     private val _status = MutableStateFlow<BotStatus?>(null)
@@ -49,7 +45,7 @@ class BotViewModel(application: Application) : AndroidViewModel(application) {
     private val _logs = MutableStateFlow<List<LogEntry>>(emptyList())
     val logs: StateFlow<List<LogEntry>> = _logs.asStateFlow()
 
-    // Risk Parameters (MutableStateFlows to drive UI inputs)
+    // Risk Parameters
     val orderAmountUsd = MutableStateFlow(2.0)
     val takeProfitPercent = MutableStateFlow(1.1)
     val trailingStopPercent = MutableStateFlow(0.5)
@@ -58,317 +54,148 @@ class BotViewModel(application: Application) : AndroidViewModel(application) {
     val maxConcurrentTrades = MutableStateFlow(1)
     val selectedPairs = MutableStateFlow(listOf("BTC/USDT", "ETH/USDT", "SOL/USDT", "BNB/USDT", "XRP/USDT"))
 
-    private val _bots = MutableStateFlow<List<BotInstance>>(emptyList())
-    val bots: StateFlow<List<BotInstance>> = _bots.asStateFlow()
+    private var botJob: Job? = null
+    private val binanceApi = BinanceDirectApiService.create()
 
-    private var pollingJob: Job? = null
-    private var localSimulationJob: Job? = null
-    private var apiService: BotApiService? = null
-
-    // Simulation states
-    private val simulatedBalances = mutableMapOf("USDT" to 124592.00, "USDC" to 15000.0)
-    private val simulatedTrades = mutableListOf<ActiveTrade>()
-    private val simulatedLogs = mutableListOf<LogEntry>()
+    // Simulation/State caches
+    private val simulatedBalances = mutableMapOf("USDT" to 1000.0, "USDC" to 500.0)
+    private val activeTradesCache = mutableListOf<ActiveTrade>()
+    private val logsCache = mutableListOf<LogEntry>()
 
     init {
-        // Initialize default UI state
         _status.value = BotStatus(
-            isRunning = false,
-            isMockMode = true,
-            orderAmountUsd = 2.0,
-            takeProfitPercent = 1.1,
-            trailingStopPercent = 0.5,
-            stopLossPercent = 5.0,
-            leverage = 1,
-            maxConcurrentTrades = 1,
-            selectedPairs = listOf("BTC/USDT", "ETH/USDT", "SOL/USDT", "BNB/USDT", "XRP/USDT"),
-            activePairCount = 5
+            isRunning = false, isMockMode = _isLocalDemoActive.value,
+            orderAmountUsd = 2.0, takeProfitPercent = 1.1, trailingStopPercent = 0.5,
+            stopLossPercent = 5.0, leverage = 1, maxConcurrentTrades = 1,
+            selectedPairs = selectedPairs.value, activePairCount = selectedPairs.value.size
         )
         
-        // Load initial data
-        setBaseUrl(_baseUrl.value)
+        startBotEngine()
     }
 
-    fun setBaseUrl(newUrl: String) {
-        val normalizedUrl = if (newUrl.startsWith("http")) newUrl else "http://$newUrl"
-        _baseUrl.value = normalizedUrl
-        _isConnecting.value = true
-        
-        viewModelScope.launch {
-            try {
-                apiService = BotApiService.create(normalizedUrl)
-                // Test connection
-                val testStatus = apiService?.getStatus()
-                if (testStatus != null) {
-                    _isServerOnline.value = true
-                    _isLocalDemoActive.value = false
-                    stopLocalSimulation()
-                    startServerPolling()
-                    addSimulatedLog("INFO", "Conectado satisfactoriamente al servidor Trading Bot ($normalizedUrl).")
-                } else {
-                    handleConnectionFailure("Servidor no responde")
-                }
-            } catch (e: Throwable) {
-                handleConnectionFailure(e.localizedMessage ?: "Fallo de conexión")
-            } finally {
-                _isConnecting.value = false
-            }
-        }
-    }
-
-    private fun handleConnectionFailure(msg: String) {
-        _isServerOnline.value = false
-        _isLocalDemoActive.value = true
-        startLocalSimulation()
-        addSimulatedLog("WARN", "Servidor API offline ($msg). Operando en Modo Simulación Integrada.")
-    }
-
-    fun toggleLocalDemo(active: Boolean) {
-        _isLocalDemoActive.value = active
-        if (active) {
-            stopServerPolling()
-            startLocalSimulation()
-        } else {
-            stopLocalSimulation()
-            setBaseUrl(_baseUrl.value)
-        }
-    }
-
-    private fun startServerPolling() {
-        pollingJob?.cancel()
-        pollingJob = viewModelScope.launch {
+    private fun startBotEngine() {
+        botJob?.cancel()
+        botJob = viewModelScope.launch {
             while (true) {
-                try {
-                    val service = apiService ?: break
-                    val stat = service.getStatus()
-                    val bal = service.getBalance()
-                    val tr = service.getTrades()
-                    val lg = service.getLogs()
-
-                    _status.value = stat
-                    _balances.value = bal
-                    _trades.value = tr
-                    _logs.value = lg
-                    _isServerOnline.value = true
-                } catch (e: Throwable) {
-                    _isServerOnline.value = false
-                    addSimulatedLog("ERROR", "Error de sincronización con el servidor: ${e.localizedMessage}")
+                if (_isLocalDemoActive.value) {
+                    runSimulationStep()
+                } else {
+                    runRealBinanceStep()
                 }
                 delay(3000)
             }
         }
     }
 
-    private fun stopServerPolling() {
-        pollingJob?.cancel()
-        pollingJob = null
-    }
+    private suspend fun runRealBinanceStep() {
+        val key = apiKeyValue.value
+        val secret = apiSecretValue.value
+        if (key.isEmpty() || secret.isEmpty()) {
+            addLog("WARN", "Faltan API Keys para el modo REAL. Cambiando a Simulación.")
+            _isLocalDemoActive.value = true
+            return
+        }
 
-    private fun startLocalSimulation() {
-        if (localSimulationJob != null) return
-        localSimulationJob = viewModelScope.launch {
-            while (true) {
-                val statusValue = _status.value ?: return@launch
-                
-                // Update local status mock
-                _status.value = statusValue.copy(
-                    isRunning = statusValue.isRunning,
-                    orderAmountUsd = orderAmountUsd.value,
-                    takeProfitPercent = takeProfitPercent.value,
-                    trailingStopPercent = trailingStopPercent.value,
-                    stopLossPercent = stopLossPercent.value,
-                    leverage = leverage.value,
-                    maxConcurrentTrades = maxConcurrentTrades.value,
-                    selectedPairs = selectedPairs.value,
-                    activePairCount = selectedPairs.value.size
-                )
-                
-                if (statusValue.isRunning) {
-                    val currentTradeList = simulatedTrades.toList()
-                    simulatedTrades.clear()
+        try {
+            val timestamp = System.currentTimeMillis()
+            val query = "timestamp=$timestamp"
+            val signature = BinanceSigner.sign(query, secret)
+            
+            val account = binanceApi.getAccountInfo(key, timestamp, signature)
+            val newBalances = account.balances.filter { it.free.toDouble() > 0 || it.locked.toDouble() > 0 }
+                .associate { it.asset to it.free.toDouble() + it.locked.toDouble() }
+            
+            _balances.value = newBalances
+            _isServerOnline.value = true
+            
+            // Logic for real trading would go here (Order placement, TP/SL monitoring)
+            // For now, we fetch price for the first pair to show activity
+            val pair = selectedPairs.value.first().replace("/", "")
+            val priceRes = binanceApi.getPrice(pair)
+            addLog("INFO", "Precio Real $pair: ${priceRes.price} USDT | Conexión Binance OK")
 
-                    for (trade in currentTradeList) {
-                        val priceChangeBias = Random.nextDouble(-0.5, 0.75) / 100.0
-                        val newPrice = trade.currentPrice * (1.0 + priceChangeBias)
-                        val profitP = ((newPrice - trade.entryPrice) / trade.entryPrice) * 100.0
-
-                        var highestPrice = trade.highestPrice
-                        var tsPrice = trade.tsPrice
-
-                        if (newPrice > highestPrice) {
-                            highestPrice = newPrice
-                            val newTs = newPrice * (1.0 - (statusValue.trailingStopPercent / 100.0))
-                            if (newTs > tsPrice) {
-                                tsPrice = newTs
-                                addSimulatedLog("WARN", "Trailing Stop: ${trade.symbol} subió a $${String.format(java.util.Locale.US, "%.2f", newPrice)}. Nuevo stop protegido: $${String.format(java.util.Locale.US, "%.2f", tsPrice)}")
-                            }
-                        }
-
-                        when {
-                            newPrice >= trade.tpPrice -> {
-                                val tradeVal = trade.amount * newPrice
-                                simulatedBalances["USDT"] = (simulatedBalances["USDT"] ?: 0.0) + tradeVal
-                                addSimulatedLog("SELL", "★ TAKE PROFIT: Venta de ${trade.symbol} a $${String.format(java.util.Locale.US, "%.2f", newPrice)}.")
-                            }
-                            newPrice <= tsPrice -> {
-                                val tradeVal = trade.amount * newPrice
-                                simulatedBalances["USDT"] = (simulatedBalances["USDT"] ?: 0.0) + tradeVal
-                                addSimulatedLog("SELL", "▲ TRAILING STOP ACTIVADO: Venta de ${trade.symbol} a $${String.format(java.util.Locale.US, "%.2f", newPrice)}.")
-                            }
-                            newPrice <= trade.entryPrice * (1.0 - (statusValue.stopLossPercent / 100.0)) -> {
-                                val tradeVal = trade.amount * newPrice
-                                simulatedBalances["USDT"] = (simulatedBalances["USDT"] ?: 0.0) + tradeVal
-                                addSimulatedLog("WARN", "⚠ STOP LOSS: Venta de ${trade.symbol} a $${String.format(java.util.Locale.US, "%.2f", newPrice)}.")
-                            }
-                            else -> {
-                                simulatedTrades.add(trade.copy(currentPrice = newPrice, highestPrice = highestPrice, tsPrice = tsPrice, profitPercent = profitP))
-                            }
-                        }
-                    }
-
-                    if (simulatedTrades.size < 3 && Random.nextDouble() < 0.1) {
-                        val pair = selectedPairs.value.random()
-                        if (simulatedTrades.none { it.symbol == pair }) {
-                            val price = Random.nextDouble(50000.0, 70000.0)
-                            val amount = orderAmountUsd.value / price
-                            simulatedBalances["USDT"] = (simulatedBalances["USDT"] ?: 0.0) - orderAmountUsd.value
-                            simulatedTrades.add(ActiveTrade(
-                                symbol = pair, type = "BUY", amount = amount, entryPrice = price,
-                                currentPrice = price, highestPrice = price, tpPrice = price * (1.0 + takeProfitPercent.value/100.0),
-                                tsPrice = price * (1.0 - trailingStopPercent.value/100.0), valueUsd = orderAmountUsd.value,
-                                profitPercent = 0.0, timestamp = System.currentTimeMillis().toDouble()
-                            ))
-                            addSimulatedLog("BUY", "Compra automática: $pair @ $${String.format(java.util.Locale.US, "%.2f", price)}")
-                        }
-                    }
-                }
-                
-                _balances.value = simulatedBalances.toMap()
-                _trades.value = simulatedTrades.toList()
-                _logs.value = simulatedLogs.toList().reversed()
-                
-                delay(2000)
-            }
+        } catch (e: Exception) {
+            _isServerOnline.value = false
+            addLog("ERROR", "Error de conexión con Binance: ${e.localizedMessage}")
         }
     }
 
-    private fun stopLocalSimulation() {
-        localSimulationJob?.cancel()
-        localSimulationJob = null
+    private fun runSimulationStep() {
+        val statusVal = _status.value ?: return
+        if (statusVal.isRunning) {
+            // Simulated price movement
+            val currentList = activeTradesCache.toList()
+            activeTradesCache.clear()
+            for (trade in currentList) {
+                val change = Random.nextDouble(-0.4, 0.6) / 100.0
+                val newPrice = trade.currentPrice * (1.0 + change)
+                val profit = ((newPrice - trade.entryPrice) / trade.entryPrice) * 100.0
+                
+                if (newPrice >= trade.tpPrice) {
+                    simulatedBalances["USDT"] = (simulatedBalances["USDT"] ?: 0.0) + (trade.amount * newPrice)
+                    addLog("SELL", "★ TAKE PROFIT: Venta ${trade.symbol} @ ${String.format("%.2f", newPrice)}")
+                } else if (newPrice <= trade.tsPrice) {
+                    simulatedBalances["USDT"] = (simulatedBalances["USDT"] ?: 0.0) + (trade.amount * newPrice)
+                    addLog("SELL", "▲ TRAILING STOP: Venta ${trade.symbol} @ ${String.format("%.2f", newPrice)}")
+                } else {
+                    activeTradesCache.add(trade.copy(currentPrice = newPrice, profitPercent = profit))
+                }
+            }
+
+            // New trade entry
+            if (activeTradesCache.size < 2 && Random.nextDouble() < 0.15) {
+                val p = selectedPairs.value.random()
+                val price = Random.nextDouble(50000.0, 70000.0)
+                val amt = orderAmountUsd.value / price
+                simulatedBalances["USDT"] = (simulatedBalances["USDT"] ?: 0.0) - orderAmountUsd.value
+                activeTradesCache.add(ActiveTrade(
+                    p, "BUY", amt, price, price, price, price * 1.011, price * 0.995, orderAmountUsd.value, 0.0, System.currentTimeMillis().toDouble()
+                ))
+                addLog("BUY", "Compra Sim: $p @ ${String.format("%.2f", price)}")
+            }
+        }
+        _balances.value = simulatedBalances.toMap()
+        _trades.value = activeTradesCache.toList()
     }
 
-    private fun addSimulatedLog(level: String, message: String) {
-        val sdf = SimpleDateFormat("HH:mm:ss", Locale.getDefault())
-        val time = sdf.format(Date())
-        simulatedLogs.add(LogEntry(time, level, message))
-        if (simulatedLogs.size > 50) simulatedLogs.removeAt(0)
-        _logs.value = simulatedLogs.toList().reversed()
+    private fun addLog(level: String, message: String) {
+        val time = SimpleDateFormat("HH:mm:ss", Locale.getDefault()).format(Date())
+        logsCache.add(LogEntry(time, level, message))
+        if (logsCache.size > 50) logsCache.removeAt(0)
+        _logs.value = logsCache.toList().reversed()
     }
 
     fun toggleBot() {
-        viewModelScope.launch {
-            val isRunning = _status.value?.isRunning ?: false
-            if (_isLocalDemoActive.value) {
-                _status.value = _status.value?.copy(isRunning = !isRunning)
-                addSimulatedLog("INFO", if (!isRunning) "Bot de Simulación iniciado." else "Bot de Simulación detenido.")
-            } else {
-                try {
-                    if (!isRunning) apiService?.startBot() else apiService?.stopBot()
-                    val updatedStatus = apiService?.getStatus()
-                    if (updatedStatus != null) _status.value = updatedStatus
-                } catch (e: Throwable) {
-                    addSimulatedLog("ERROR", "No se pudo cambiar el estado del bot: ${e.localizedMessage}")
-                }
-            }
-        }
+        val current = _status.value?.isRunning ?: false
+        _status.value = _status.value?.copy(isRunning = !current)
+        addLog("INFO", if (!current) "Sistema INICIADO" else "Sistema DETENIDO")
     }
 
-    fun toggleBot(botId: String) {
-        toggleBot()
-    }
-
-    fun addBot(
-        name: String,
-        amount: Double,
-        tp: Double,
-        ts: Double,
-        sl: Double,
-        lev: Int,
-        maxTrades: Int,
-        pairs: List<String>
-    ) {
-        // Legacy support stub
-        addSimulatedLog("INFO", "Bot '$name' añadido a la flota.")
-    }
-
-    fun removeBot(botId: String) {
-        // Legacy support stub
-        addSimulatedLog("WARN", "Bot eliminado de la flota.")
+    fun toggleLocalDemo(active: Boolean) {
+        _isLocalDemoActive.value = active
+        prefs.edit().putBoolean("is_demo", active).apply()
+        _status.value = _status.value?.copy(isMockMode = active)
+        addLog("INFO", "Cambiando a modo ${if (active) "SIMULACIÓN" else "REAL"}")
     }
 
     fun saveConfiguration() {
         prefs.edit().apply {
             putString("api_key", apiKeyValue.value)
             putString("api_secret", apiSecretValue.value)
-            putString("base_url", _baseUrl.value)
             apply()
         }
-        viewModelScope.launch {
-            val update = BotConfigUpdate(
-                apiKey = apiKeyValue.value,
-                apiSecret = apiSecretValue.value,
-                isMockMode = apiKeyValue.value.isEmpty() || apiSecretValue.value.isEmpty(),
-                orderAmountUsd = orderAmountUsd.value,
-                takeProfitPercent = takeProfitPercent.value,
-                trailingStopPercent = trailingStopPercent.value,
-                stopLossPercent = stopLossPercent.value,
-                leverage = leverage.value,
-                maxConcurrentTrades = maxConcurrentTrades.value,
-                selectedPairs = selectedPairs.value
-            )
-
-            if (_isLocalDemoActive.value) {
-                _status.value = _status.value?.copy(
-                    orderAmountUsd = update.orderAmountUsd,
-                    takeProfitPercent = update.takeProfitPercent,
-                    trailingStopPercent = update.trailingStopPercent,
-                    stopLossPercent = update.stopLossPercent,
-                    leverage = update.leverage,
-                    maxConcurrentTrades = update.maxConcurrentTrades,
-                    selectedPairs = update.selectedPairs,
-                    activePairCount = update.selectedPairs.size
-                )
-                addSimulatedLog("INFO", "Configuración de simulación guardada.")
-            } else {
-                try {
-                    apiService?.updateConfig(update)
-                    addSimulatedLog("INFO", "Configuración enviada al servidor backend.")
-                    val updatedStatus = apiService?.getStatus()
-                    if (updatedStatus != null) _status.value = updatedStatus
-                } catch (e: Throwable) {
-                    addSimulatedLog("ERROR", "Error al sincronizar configuración: ${e.localizedMessage}")
-                }
-            }
+        _status.value = _status.value?.copy(
+            orderAmountUsd = orderAmountUsd.value,
+            takeProfitPercent = takeProfitPercent.value,
+            trailingStopPercent = trailingStopPercent.value
+        )
+        addLog("INFO", "Configuración guardada localmente.")
+        if (!_isLocalDemoActive.value) {
+            viewModelScope.launch { runRealBinanceStep() }
         }
     }
 
-    fun addPair(pair: String) {
-        if (!selectedPairs.value.contains(pair)) {
-            selectedPairs.value = selectedPairs.value + pair
-            saveConfiguration()
-        }
-    }
-
-    fun removePair(pair: String) {
-        if (selectedPairs.value.contains(pair)) {
-            selectedPairs.value = selectedPairs.value - pair
-            saveConfiguration()
-        }
-    }
-
-    override fun onCleared() {
-        super.onCleared()
-        stopServerPolling()
-        stopLocalSimulation()
-    }
+    fun toggleBot(id: String) = toggleBot()
+    fun addBot(name: String, amount: Double, tp: Double, ts: Double, sl: Double, lev: Int, maxTrades: Int, pairs: List<String>) {}
+    fun removeBot(id: String) {}
 }

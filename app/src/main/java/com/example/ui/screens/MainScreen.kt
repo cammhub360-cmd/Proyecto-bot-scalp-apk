@@ -1374,75 +1374,27 @@ fun ConfigTab(
         verticalArrangement = Arrangement.spacedBy(16.dp),
         contentPadding = PaddingValues(vertical = 12.dp)
     ) {
-        // ENDPOINT CONNECTIVITY ADJUSTER
+        // MODE SELECTOR (SIMULATION VS REAL)
         item {
             Card(
                 colors = CardDefaults.cardColors(containerColor = SurfaceSlate),
                 shape = RoundedCornerShape(12.dp),
-                border = BorderStroke(1.dp, SurfaceBorder)
+                border = BorderStroke(1.dp, TechCobalt.copy(alpha = 0.5f))
             ) {
-                Column(modifier = Modifier.padding(14.dp)) {
-                    Text(
-                        "CONECTIVIDAD BACKEND CCXT",
-                        fontSize = 11.sp,
-                        color = TextSecondary,
-                        fontWeight = FontWeight.Bold,
-                        letterSpacing = 1.sp
-                    )
-
-                    Spacer(modifier = Modifier.height(10.dp))
-
-                    OutlinedTextField(
-                        value = editBaseUrl,
-                        onValueChange = { editBaseUrl = it },
-                        label = { Text("URL del Servidor API (FastAPI)", color = TextSecondary) },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .testTag("backend_url_input"),
-                        singleLine = true,
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedTextColor = TextPrimary,
-                            unfocusedTextColor = TextPrimary,
-                            focusedBorderColor = AccentGold,
-                            unfocusedBorderColor = SurfaceBorder
-                        )
-                    )
-                    Text(
-                        "Si usas un celular real, usa la IP de tu PC (ej: http://192.168.1.15:8080)",
-                        fontSize = 10.sp,
-                        color = TechCyan,
-                        modifier = Modifier.padding(top = 4.dp, bottom = 4.dp)
-                    )
-
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(top = 10.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Checkbox(
-                                checked = isDemo,
-                                onCheckedChange = { viewModel.toggleLocalDemo(it) },
-                                colors = CheckboxDefaults.colors(checkedColor = AccentGold)
-                            )
-                            Text("Modo Simulación Local", fontSize = 12.sp, color = TextPrimary)
-                        }
-
-                        Button(
-                            onClick = {
-                                keyboardController?.hide()
-                                viewModel.setBaseUrl(editBaseUrl)
-                            },
-                            colors = ButtonDefaults.buttonColors(containerColor = AccentGold, contentColor = BackgroundDark),
-                            shape = RoundedCornerShape(8.dp),
-                            enabled = !isConnecting,
-                            modifier = Modifier.height(36.dp)
-                        ) {
-                            Text(if (isConnecting) "Conectando" else "Conectar", fontSize = 11.sp, fontWeight = FontWeight.Bold)
-                        }
+                Row(
+                    modifier = Modifier.padding(14.dp).fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text("MODO DE EJECUCIÓN", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TechCyan)
+                        Text(if (isDemo) "Operando con dinero ficticio" else "CONECTADO A BINANCE LIVE", fontSize = 12.sp, color = TextPrimary)
                     }
+                    Switch(
+                        checked = !isDemo,
+                        onCheckedChange = { viewModel.toggleLocalDemo(!it) },
+                        colors = SwitchDefaults.colors(checkedThumbColor = TradeGreen, checkedTrackColor = TradeGreen.copy(alpha = 0.3f))
+                    )
                 }
             }
         }
