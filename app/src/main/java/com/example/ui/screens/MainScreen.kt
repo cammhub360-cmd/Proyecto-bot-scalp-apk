@@ -262,7 +262,6 @@ fun MainScreen(
                     0 -> DashboardTab(
                         status = status,
                         trades = trades,
-                        fleetBots = fleetBots,
                         viewModel = viewModel
                     )
                     1 -> BilleteraTab(
@@ -435,7 +434,6 @@ fun PortfolioSummaryCard(
 fun DashboardTab(
     status: com.example.data.BotStatus?,
     trades: List<ActiveTrade>,
-    fleetBots: List<com.example.data.BotInstance>,
     viewModel: BotViewModel
 ) {
     val chartSymbol = if (trades.isNotEmpty()) trades.first().symbol else "BTC / USDT"
