@@ -1,4 +1,5 @@
 package com.example.ui.viewmodel
+
 import android.app.Application
 import android.content.Context
 import androidx.lifecycle.AndroidViewModel
@@ -22,9 +23,21 @@ class BotViewModel(application: Application) : AndroidViewModel(application) {
     private val _baseUrl = MutableStateFlow(prefs.getString("base_url", "http://10.0.2.2:8080") ?: "http://10.0.2.2:8080")
     val baseUrl: StateFlow<String> = _baseUrl.asStateFlow()
 
+    private val _isConnecting = MutableStateFlow(false)
+    val isConnecting: StateFlow<Boolean> = _isConnecting.asStateFlow()
+
+    private val _isServerOnline = MutableStateFlow(false)
+    val isServerOnline: StateFlow<Boolean> = _isServerOnline.asStateFlow()
+
+    private val _isLocalDemoActive = MutableStateFlow(true)
+    val isLocalDemoActive: StateFlow<Boolean> = _isLocalDemoActive.asStateFlow()
+
     // Key configuration inputs
     val apiKeyValue = MutableStateFlow(prefs.getString("api_key", "") ?: "")
     val apiSecretValue = MutableStateFlow(prefs.getString("api_secret", "") ?: "")
+
+    // Bot State
+    private val _status = MutableStateFlow<BotStatus?>(null)
     val status: StateFlow<BotStatus?> = _status.asStateFlow()
 
     private val _balances = MutableStateFlow<Map<String, Double>>(emptyMap())
@@ -36,20 +49,9 @@ class BotViewModel(application: Application) : AndroidViewModel(application) {
     private val _logs = MutableStateFlow<List<LogEntry>>(emptyList())
     val logs: StateFlow<List<LogEntry>> = _logs.asStateFlow()
 
-    private val _isConnecting = MutableStateFlow(false)
-    val isConnecting: StateFlow<Boolean> = _isConnecting.asStateFlow()
-
-    private val _isServerOnline = MutableStateFlow(false)
-    val isServerOnline: StateFlow<Boolean> = _isServerOnline.asStateFlow()
-
-    private val _isLocalDemoActive = MutableStateFlow(true) // Start with demo mode active for immediate visual feedback
-    val isLocalDemoActive: StateFlow<Boolean> = _isLocalDemoActive.asStateFlow()
-
-    // Temp Form inputs for easy setup
-    val apiKeyValue = MutableStateFlow("")
-    val apiSecretValue = MutableStateFlow("")
+    // Risk Parameters (MutableStateFlows to drive UI inputs)
     val orderAmountUsd = MutableStateFlow(2.0)
-    val takeProfitPercent = MutableStateFlow(1.0)
+    val takeProfitPercent = MutableStateFlow(1.1)
     val trailingStopPercent = MutableStateFlow(0.5)
     val stopLossPercent = MutableStateFlow(5.0)
     val leverage = MutableStateFlow(1)
@@ -63,95 +65,46 @@ class BotViewModel(application: Application) : AndroidViewModel(application) {
     private var localSimulationJob: Job? = null
     private var apiService: BotApiService? = null
 
-    // For local simulation
-    private val simulatedBalances = mutableMapOf(
-        "USDT" to 120.0,
-        "USDC" to 85.0,
-        "BTC" to 0.00045,
-        "ETH" to 0.012,
-        "SOL" to 0.18,
-        "BNB" to 0.04
-    )
+    // Simulation states
+    private val simulatedBalances = mutableMapOf("USDT" to 124592.00, "USDC" to 15000.0)
     private val simulatedTrades = mutableListOf<ActiveTrade>()
     private val simulatedLogs = mutableListOf<LogEntry>()
 
-    fun addBot(name: String, amount: Double, tp: Double, ts: Double, sl: Double, lev: Int, maxTrades: Int, pairs: List<String>) {
-        val newBot = BotInstance(
-            id = UUID.randomUUID().toString(),
-            name = name,
-            orderAmountUsd = amount,
-            takeProfitPercent = tp,
-            trailingStopPercent = ts,
-            stopLossPercent = sl,
-            leverage = lev,
-            maxConcurrentTrades = maxTrades,
-            selectedPairs = pairs,
-            isRunning = true
-        )
-        _bots.value = _bots.value + newBot
-        addSimulatedLog("INFO", "Bot creado y en ejecución: \$name")
-    }
-
-    fun removeBot(botId: String) {
-        val bot = _bots.value.find { it.id == botId }
-        _bots.value = _bots.value.filter { it.id != botId }
-        bot?.let {
-            addSimulatedLog("WARN", "Bot eliminado: \${it.name}")
-        }
-    }
-
-    fun toggleBot(botId: String) {
-        _bots.value = _bots.value.map { 
-            if (it.id == botId) {
-                val state = if (!it.isRunning) "iniciado" else "detenido"
-                addSimulatedLog("INFO", "Bot \${it.name} \$state")
-                it.copy(isRunning = !it.isRunning) 
-            } else it 
-        }
-    }
-
     init {
-        // Load initial logs
-        addSimulatedLog("INFO", "Dispositivo configurado. Modo demostración activo.")
-        addSimulatedLog("INFO", "Para conectar a un servidor real Docker/PC, ingresa la IP en Ajustes.")
-        
-        // Default Bot
-        val defaultBot = BotInstance(
-            id = UUID.randomUUID().toString(),
-            name = "Quantum-Alpha-01",
+        // Initialize default UI state
+        _status.value = BotStatus(
+            isRunning = false,
+            isMockMode = true,
             orderAmountUsd = 2.0,
-            takeProfitPercent = 1.0,
+            takeProfitPercent = 1.1,
             trailingStopPercent = 0.5,
             stopLossPercent = 5.0,
             leverage = 1,
             maxConcurrentTrades = 1,
             selectedPairs = listOf("BTC/USDT", "ETH/USDT", "SOL/USDT", "BNB/USDT", "XRP/USDT"),
-            isRunning = true
+            activePairCount = 5
         )
-        _bots.value = listOf(defaultBot)
-
-        // Start simulated polling right away
-        startLocalSimulation()
         
-        // Run network check to see if local PC API is available
-        setBaseUrl("http://10.0.2.2:8080")
+        // Load initial data
+        setBaseUrl(_baseUrl.value)
     }
 
     fun setBaseUrl(newUrl: String) {
+        val normalizedUrl = if (newUrl.startsWith("http")) newUrl else "http://$newUrl"
+        _baseUrl.value = normalizedUrl
+        _isConnecting.value = true
+        
         viewModelScope.launch {
-            _baseUrl.value = newUrl
-            _isConnecting.value = true
             try {
-                apiService = BotApiService.create(newUrl)
-                // Test ping
-                val remoteStatus = apiService?.getStatus()
-                if (remoteStatus != null) {
-                    _status.value = remoteStatus
+                apiService = BotApiService.create(normalizedUrl)
+                // Test connection
+                val testStatus = apiService?.getStatus()
+                if (testStatus != null) {
                     _isServerOnline.value = true
-                    _isLocalDemoActive.value = false // Deactivate client side simulation since server is active!
+                    _isLocalDemoActive.value = false
                     stopLocalSimulation()
                     startServerPolling()
-                    addSimulatedLog("INFO", "Conectado satisfactoriamente al servidor Trading Bot ($newUrl).")
+                    addSimulatedLog("INFO", "Conectado satisfactoriamente al servidor Trading Bot ($normalizedUrl).")
                 } else {
                     handleConnectionFailure("Servidor no responde")
                 }
@@ -166,32 +119,27 @@ class BotViewModel(application: Application) : AndroidViewModel(application) {
     private fun handleConnectionFailure(msg: String) {
         _isServerOnline.value = false
         _isLocalDemoActive.value = true
-        // If we fall back to local demo, ensure it runs
         startLocalSimulation()
         addSimulatedLog("WARN", "Servidor API offline ($msg). Operando en Modo Simulación Integrada.")
     }
 
-    // Toggle backend connectivity manually
     fun toggleLocalDemo(active: Boolean) {
         _isLocalDemoActive.value = active
         if (active) {
             stopServerPolling()
             startLocalSimulation()
-            addSimulatedLog("INFO", "Modo Simulación local re-activado de forma manual.")
         } else {
             stopLocalSimulation()
             setBaseUrl(_baseUrl.value)
         }
     }
 
-    // Server Polling Routine
     private fun startServerPolling() {
         pollingJob?.cancel()
         pollingJob = viewModelScope.launch {
             while (true) {
                 try {
                     val service = apiService ?: break
-                    // Parallel calls to speed up response times
                     val stat = service.getStatus()
                     val bal = service.getBalance()
                     val tr = service.getTrades()
@@ -204,10 +152,7 @@ class BotViewModel(application: Application) : AndroidViewModel(application) {
                     _isServerOnline.value = true
                 } catch (e: Throwable) {
                     _isServerOnline.value = false
-                    addSimulatedLog("ERROR", "Servidor API desconectado durante polling: ${e.localizedMessage}")
-                    _isLocalDemoActive.value = true
-                    startLocalSimulation()
-                    break
+                    addSimulatedLog("ERROR", "Error de sincronización con el servidor: ${e.localizedMessage}")
                 }
                 delay(3000)
             }
@@ -219,34 +164,15 @@ class BotViewModel(application: Application) : AndroidViewModel(application) {
         pollingJob = null
     }
 
-    // --- CLIENT SIDE SIMULATOR (No Server required for visual reviews!) ---
     private fun startLocalSimulation() {
-        if (localSimulationJob?.isActive == true) return
-        
-        // Sync values to form
-        _status.value = BotStatus(
-            isRunning = true,
-            isMockMode = true,
-            orderAmountUsd = orderAmountUsd.value,
-            takeProfitPercent = takeProfitPercent.value,
-            trailingStopPercent = trailingStopPercent.value,
-            stopLossPercent = stopLossPercent.value,
-            leverage = leverage.value,
-            maxConcurrentTrades = maxConcurrentTrades.value,
-            selectedPairs = selectedPairs.value,
-            activePairCount = selectedPairs.value.size
-        )
-        _balances.value = simulatedBalances.toMap()
-        _trades.value = simulatedTrades.toList()
-        _logs.value = simulatedLogs.toList()
-
+        if (localSimulationJob != null) return
         localSimulationJob = viewModelScope.launch {
             while (true) {
-                // Periodically update active trade prices
-                val updated = mutableListOf<ActiveTrade>()
-                val statusValue = _status.value ?: BotStatus(
-                    isRunning = true,
-                    isMockMode = true,
+                val statusValue = _status.value ?: return@launch
+                
+                // Update local status mock
+                _status.value = statusValue.copy(
+                    isRunning = statusValue.isRunning,
                     orderAmountUsd = orderAmountUsd.value,
                     takeProfitPercent = takeProfitPercent.value,
                     trailingStopPercent = trailingStopPercent.value,
@@ -262,7 +188,7 @@ class BotViewModel(application: Application) : AndroidViewModel(application) {
                     simulatedTrades.clear()
 
                     for (trade in currentTradeList) {
-                        val priceChangeBias = Random.nextDouble(-0.5, 0.75) / 100.0 // upward bias for fun
+                        val priceChangeBias = Random.nextDouble(-0.5, 0.75) / 100.0
                         val newPrice = trade.currentPrice * (1.0 + priceChangeBias)
                         val profitP = ((newPrice - trade.entryPrice) / trade.entryPrice) * 100.0
 
@@ -274,104 +200,53 @@ class BotViewModel(application: Application) : AndroidViewModel(application) {
                             val newTs = newPrice * (1.0 - (statusValue.trailingStopPercent / 100.0))
                             if (newTs > tsPrice) {
                                 tsPrice = newTs
-                                addSimulatedLog("WARN", "Trailing Stop: ${trade.symbol} subió a $${String.format(java.util.Locale.US, "%.2f", newPrice)}. Nuevo stop protegido: $${String.format(java.util.Locale.US, "%.2f", tsPrice)}")
+                                addSimulatedLog("WARN", "Trailing Stop: ${trade.symbol} subió a $${String.format("%.2f", newPrice)}. Nuevo stop protegido: $${String.format("%.2f", tsPrice)}")
                             }
                         }
 
-                        // Exit triggers
                         when {
                             newPrice >= trade.tpPrice -> {
                                 val tradeVal = trade.amount * newPrice
-                                val oldVal = trade.amount * trade.entryPrice
-                                val netP = tradeVal - oldVal
                                 simulatedBalances["USDT"] = (simulatedBalances["USDT"] ?: 0.0) + tradeVal
-                                addSimulatedLog("SELL", "★ TAKE PROFIT (1.0% Hit): Venta de ${trade.symbol} a \$${String.format(java.util.Locale.US, "%.2f", newPrice)}. Retorno: \$${String.format(java.util.Locale.US, "%.2f", tradeVal)} (+\$${String.format(java.util.Locale.US, "%.2f", netP)})")
+                                addSimulatedLog("SELL", "★ TAKE PROFIT: Venta de ${trade.symbol} a $${String.format("%.2f", newPrice)}.")
                             }
                             newPrice <= tsPrice -> {
                                 val tradeVal = trade.amount * newPrice
-                                val oldVal = trade.amount * trade.entryPrice
-                                val netP = tradeVal - oldVal
                                 simulatedBalances["USDT"] = (simulatedBalances["USDT"] ?: 0.0) + tradeVal
-                                val sign = if (netP >= 0) "+" else ""
-                                addSimulatedLog("SELL", "▲ TRAILING STOP ACTIVADO (${sign}${String.format(java.util.Locale.US, "%.2f", profitP)}%): Venta de ${trade.symbol} a \$${String.format(java.util.Locale.US, "%.2f", newPrice)} para proteger saldo.")
+                                addSimulatedLog("SELL", "▲ TRAILING STOP ACTIVADO: Venta de ${trade.symbol} a $${String.format("%.2f", newPrice)}.")
                             }
                             newPrice <= trade.entryPrice * (1.0 - (statusValue.stopLossPercent / 100.0)) -> {
                                 val tradeVal = trade.amount * newPrice
-                                val oldVal = trade.amount * trade.entryPrice
-                                val netP = tradeVal - oldVal
                                 simulatedBalances["USDT"] = (simulatedBalances["USDT"] ?: 0.0) + tradeVal
-                                addSimulatedLog("WARN", "⚠ STOP LOSS ALCANZADO: Venta de ${trade.symbol} a \$${String.format(java.util.Locale.US, "%.2f", newPrice)} (${String.format(java.util.Locale.US, "%.2f", profitP)}%).")
+                                addSimulatedLog("WARN", "⚠ STOP LOSS: Venta de ${trade.symbol} a $${String.format("%.2f", newPrice)}.")
                             }
                             else -> {
-                                simulatedTrades.add(
-                                    trade.copy(
-                                        currentPrice = newPrice,
-                                        highestPrice = highestPrice,
-                                        tsPrice = tsPrice,
-                                        valueUsd = trade.amount * newPrice,
-                                        profitPercent = profitP
-                                    )
-                                )
+                                simulatedTrades.add(trade.copy(currentPrice = newPrice, highestPrice = highestPrice, tsPrice = tsPrice, profitPercent = profitP))
                             }
                         }
                     }
 
-                    // Occasionally launch a new trade if balance allows (min $2 USDT)
-                    val availableUsdt = simulatedBalances["USDT"] ?: 0.0
-                    val currentOrderAmt = statusValue.orderAmountUsd
-                    if (simulatedTrades.size < 4 && availableUsdt >= currentOrderAmt && Random.nextDouble() < 0.2) {
-                        val remainingPairs = statusValue.selectedPairs.filter { p -> simulatedTrades.none { it.symbol == p } }
-                        if (remainingPairs.isNotEmpty()) {
-                            val targetPair = remainingPairs.random()
-                            val baseCoin = targetPair.split("/")[0]
-                            val entryPrice = when (baseCoin) {
-                                "BTC" -> Random.nextDouble(64000.0, 68000.0)
-                                "ETH" -> Random.nextDouble(3100.0, 3400.0)
-                                "SOL" -> Random.nextDouble(160.0, 190.0)
-                                "BNB" -> Random.nextDouble(540.0, 580.0)
-                                "XRP" -> Random.nextDouble(0.5, 0.6)
-                                else -> Random.nextDouble(10.0, 100.0)
-                            }
-                            val buyAmount = currentOrderAmt / entryPrice
-                            simulatedBalances["USDT"] = availableUsdt - currentOrderAmt
-                            
-                            val freshTrade = ActiveTrade(
-                                symbol = targetPair,
-                                type = "BUY",
-                                entryPrice = entryPrice,
-                                currentPrice = entryPrice,
-                                highestPrice = entryPrice,
-                                amount = buyAmount,
-                                tpPrice = entryPrice * (1.0 + (statusValue.takeProfitPercent / 100.0)),
-                                tsPrice = entryPrice * (1.0 - (statusValue.trailingStopPercent / 100.0)),
-                                valueUsd = currentOrderAmt,
-                                profitPercent = 0.0,
-                                timestamp = System.currentTimeMillis() / 1000.0
-                            )
-                            simulatedTrades.add(freshTrade)
-                            addSimulatedLog("BUY", "Orden Compra: ${targetPair} ejecutada a $${String.format(java.util.Locale.US, "%.2f", entryPrice)}. Monto: $${String.format(java.util.Locale.US, "%.2f", currentOrderAmt)}")
+                    if (simulatedTrades.size < 3 && Random.nextDouble() < 0.1) {
+                        val pair = selectedPairs.value.random()
+                        if (simulatedTrades.none { it.symbol == pair }) {
+                            val price = Random.nextDouble(50000.0, 70000.0)
+                            val amount = orderAmountUsd.value / price
+                            simulatedBalances["USDT"] = (simulatedBalances["USDT"] ?: 0.0) - orderAmountUsd.value
+                            simulatedTrades.add(ActiveTrade(
+                                symbol = pair, type = "BUY", amount = amount, entryPrice = price,
+                                currentPrice = price, highestPrice = price, tpPrice = price * (1.0 + takeProfitPercent.value/100.0),
+                                tsPrice = price * (1.0 - trailingStopPercent.value/100.0), valueUsd = orderAmountUsd.value,
+                                profitPercent = 0.0, timestamp = System.currentTimeMillis()
+                            ))
+                            addSimulatedLog("BUY", "Compra automática: $pair @ $${String.format("%.2f", price)}")
                         }
                     }
                 }
-
-                // Update flows
+                
                 _balances.value = simulatedBalances.toMap()
                 _trades.value = simulatedTrades.toList()
-                _logs.value = simulatedLogs.toList()
+                _logs.value = simulatedLogs.toList().reversed()
                 
-                // Keep simulated status object updated
-                _status.value = BotStatus(
-                    isRunning = statusValue.isRunning,
-                    isMockMode = true,
-                    orderAmountUsd = orderAmountUsd.value,
-                    takeProfitPercent = takeProfitPercent.value,
-                    trailingStopPercent = trailingStopPercent.value,
-                    stopLossPercent = stopLossPercent.value,
-                    leverage = leverage.value,
-                    maxConcurrentTrades = maxConcurrentTrades.value,
-                    selectedPairs = selectedPairs.value,
-                    activePairCount = selectedPairs.value.size
-                )
                 delay(2000)
             }
         }
@@ -382,51 +257,27 @@ class BotViewModel(application: Application) : AndroidViewModel(application) {
         localSimulationJob = null
     }
 
-    private fun addSimulatedLog(level: String, text: String) {
+    private fun addSimulatedLog(level: String, message: String) {
         val sdf = SimpleDateFormat("HH:mm:ss", Locale.getDefault())
-        val formattedTime = sdf.format(Date())
-        val log = LogEntry(time = formattedTime, level = level, message = text)
-        simulatedLogs.add(0, log)
-        if (simulatedLogs.size > 100) {
-            simulatedLogs.removeAt(simulatedLogs.lastIndex)
-        }
-        _logs.value = simulatedLogs.toList()
+        val time = sdf.format(Date())
+        simulatedLogs.add(LogEntry(time, level, message))
+        if (simulatedLogs.size > 50) simulatedLogs.removeAt(0)
+        _logs.value = simulatedLogs.toList().reversed()
     }
 
-    // Server-side action bindings with simulated fallbacks
-    fun startBot() {
+    fun toggleBot() {
         viewModelScope.launch {
+            val isRunning = _status.value?.isRunning ?: false
             if (_isLocalDemoActive.value) {
-                val current = _status.value
-                if (current != null) {
-                    _status.value = current.copy(isRunning = true)
-                }
-                addSimulatedLog("INFO", "★ Bot Simulado iniciado de forma local.")
+                _status.value = _status.value?.copy(isRunning = !isRunning)
+                addSimulatedLog("INFO", if (!isRunning) "Bot de Simulación iniciado." else "Bot de Simulación detenido.")
             } else {
                 try {
-                    apiService?.startBot()
-                    addSimulatedLog("INFO", "Iniciando bot real por comando REST...")
+                    if (!isRunning) apiService?.startBot() else apiService?.stopBot()
+                    val updatedStatus = apiService?.getStatus()
+                    if (updatedStatus != null) _status.value = updatedStatus
                 } catch (e: Throwable) {
-                    addSimulatedLog("ERROR", "No se pudo arrancar el bot remoto: ${e.localizedMessage}")
-                }
-            }
-        }
-    }
-
-    fun stopBot() {
-        viewModelScope.launch {
-            if (_isLocalDemoActive.value) {
-                val current = _status.value
-                if (current != null) {
-                    _status.value = current.copy(isRunning = false)
-                }
-                addSimulatedLog("WARN", "▲ Bot Simulado detenido de forma local.")
-            } else {
-                try {
-                    apiService?.stopBot()
-                    addSimulatedLog("WARN", "Deteniendo bot real por comando REST...")
-                } catch (e: Throwable) {
-                    addSimulatedLog("ERROR", "No se pudo detener el bot remoto: ${e.localizedMessage}")
+                    addSimulatedLog("ERROR", "No se pudo cambiar el estado del bot: ${e.localizedMessage}")
                 }
             }
         }
@@ -454,7 +305,6 @@ class BotViewModel(application: Application) : AndroidViewModel(application) {
             )
 
             if (_isLocalDemoActive.value) {
-                // Update local simulation configuration parameters
                 _status.value = _status.value?.copy(
                     orderAmountUsd = update.orderAmountUsd,
                     takeProfitPercent = update.takeProfitPercent,
@@ -465,18 +315,15 @@ class BotViewModel(application: Application) : AndroidViewModel(application) {
                     selectedPairs = update.selectedPairs,
                     activePairCount = update.selectedPairs.size
                 )
-                addSimulatedLog("INFO", "Configuración modificada: Compra $${update.orderAmountUsd} USDT | Aplancamiento x${update.leverage} | TP ${update.takeProfitPercent}% | TS ${update.trailingStopPercent}% | SL ${update.stopLossPercent}%")
+                addSimulatedLog("INFO", "Configuración de simulación guardada.")
             } else {
                 try {
                     apiService?.updateConfig(update)
-                    addSimulatedLog("INFO", "Nueva configuración de trading cargada en el servidor backend.")
-                    // Refresh status
+                    addSimulatedLog("INFO", "Configuración enviada al servidor backend.")
                     val updatedStatus = apiService?.getStatus()
-                    if (updatedStatus != null) {
-                        _status.value = updatedStatus
-                    }
+                    if (updatedStatus != null) _status.value = updatedStatus
                 } catch (e: Throwable) {
-                    addSimulatedLog("ERROR", "Fallo al subir configuración al host: ${e.localizedMessage}")
+                    addSimulatedLog("ERROR", "Error al sincronizar configuración: ${e.localizedMessage}")
                 }
             }
         }
@@ -490,7 +337,7 @@ class BotViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun removePair(pair: String) {
-        if (selectedPairs.value.contains(pair) && selectedPairs.value.size > 1) {
+        if (selectedPairs.value.contains(pair)) {
             selectedPairs.value = selectedPairs.value - pair
             saveConfiguration()
         }
