@@ -1,7 +1,6 @@
 package com.example.ui.viewmodel
 
-import android.app.Application
-import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.data.*
 import kotlinx.coroutines.Job
@@ -14,7 +13,7 @@ import java.text.SimpleDateFormat
 import java.util.*
 import kotlin.random.Random
 
-class BotViewModel(application: Application) : AndroidViewModel(application) {
+class BotViewModel : ViewModel() {
 
     // Network & URL state
     private val _baseUrl = MutableStateFlow("http://10.0.2.2:8080")

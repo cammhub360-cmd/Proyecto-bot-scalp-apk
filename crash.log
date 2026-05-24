@@ -1,0 +1,120 @@
+--------- beginning of main
+05-24 15:37:18.617  7057  7057 E libEGL  : No entry found in platform lookup table for eglSurfaceAttribMTK
+05-24 15:37:18.618  7057  7057 D ExtensionsLoader: createInstance(64bit) : createExtendedFactory
+05-24 15:37:18.618  7057  7057 D ExtensionsLoader: Opened libguiextimpl.so
+05-24 15:37:18.658  7057  7057 D OplusUtils: OplusUtils [84]: 
+05-24 15:37:18.673  7057  7057 E app_process: createInstance(64bit) : createExtendedFactory
+05-24 15:37:18.673  7057  7057 E app_process: createInstance(64bit) : createExtendedFactory
+05-24 15:37:18.673  7057  7057 E app_process: Opened libinputextensionsimpl.so
+05-24 15:37:18.674  7057  7057 E app_process: Opened libinputextensionsimpl.so
+05-24 15:37:18.675  7057  7057 D AndroidRuntime: >>>>>> START com.android.internal.os.RuntimeInit uid 10619 <<<<<<
+05-24 15:37:18.679  7057  7057 I app_process: MMAP_TRYLOCK is supported in uffd errno:2 addr:0x76415ab000 size:4096
+05-24 15:37:18.681  7057  7057 I AndroidRuntime: Using default boot image
+05-24 15:37:18.681  7057  7057 I AndroidRuntime: Leaving lock profiling enabled
+05-24 15:37:18.681  7057  7057 W libc    : Access denied finding property "odsign.verification.success"
+05-24 15:37:18.684  7057  7057 W app_process: ART APEX data files are untrusted.
+05-24 15:37:18.684  7057  7057 I app_process: Using CollectorTypeCMC GC.
+05-24 15:37:18.685  7057  7057 E app_process: Error reading named image component header for /system/framework/boot.art, error: Failed to open oat file '/system/framework/arm64/boot.oat' when validating it for image '/system/framework/boot.art': In oat file '/system/framework/boot.oat': invalid oat header: Invalid oat version, expected 0x32363500, got 0x32353900.
+05-24 15:37:18.685  7057  7057 E app_process: Could not create image space with image file '/system/framework/boot.art!/apex/com.android.art/etc/boot-image.prof!/system/etc/boot-image.prof:/system/framework/boot-framework-adservices.art'. Attempting to fall back to imageless running. Error was: Failed to open oat file '/system/framework/arm64/boot.oat' when validating it for image '/system/framework/boot.art': In oat file '/system/framework/boot.oat': invalid oat header: Invalid oat version, expected 0x32363500, got 0x32353900.
+05-24 15:37:18.685  7057  7057 W app_process: Bump pointer space is not aligned to 2048KB. This can lead to longer stop-the-world pauses for compaction
+05-24 15:37:19.055  7057  7057 D nativeloader: InitDefaultPublicLibraries for_preload=1: libandroid.so:libaaudio.so:libamidi.so:libbinder_ndk.so:libc.so:libcamera2ndk.so:libdl.so:libEGL.so:libGLESv1_CM.so:libGLESv2.so:libGLESv3.so:libicu.so:libicui18n.so:libicuuc.so:libjnigraphics.so:liblog.so:libmediandk.so:libm.so:libnativehelper.so:libnativewindow.so:libOpenMAXAL.so:libOpenSLES.so:libRS.so:libstdc++.so:libsync.so:libvulkan.so:libwebviewchromium_plat_support.so:libz.so
+05-24 15:37:19.074  7057  7057 D nativeloader: Load libicu_jni.so using APEX ns com_android_art for caller /apex/com.android.art/javalib/core-oj.jar: ok
+05-24 15:37:19.074  7057  7057 D app_process: u_setTimeZoneFilesDirectory("/apex/com.android.tzdata/etc/tz/versioned/9/icu") succeeded. 
+05-24 15:37:19.074  7057  7057 D app_process: I18n APEX ICU file found: /apex/com.android.i18n/etc/icu/icudt76l.dat
+05-24 15:37:19.075  7057  7057 D nativeloader: Load libjavacore.so using APEX ns com_android_art for caller /apex/com.android.art/javalib/core-oj.jar: ok
+05-24 15:37:19.077  7057  7057 D nativeloader: Load libopenjdk.so using APEX ns com_android_art for caller /apex/com.android.art/javalib/core-oj.jar: ok
+05-24 15:37:19.098  7057  7057 I app_process: Priority-to-niceness mapping: 19, 16, 13, 10, 0, -2, -4, -5, -6, -8
+05-24 15:37:19.130  7057  7057 D ExtLoader: DEFAULT_DEBUG_DUMMY=false, DEFAULT_DEBUG_CREATE=false
+05-24 15:37:19.278  7057  7057 W libc    : Access denied finding property "ro.product.name_for_attestation"
+05-24 15:37:19.278  7057  7057 W libc    : Access denied finding property "ro.product.device_for_attestation"
+05-24 15:37:19.278  7057  7057 W libc    : Access denied finding property "ro.product.manufacturer_for_attestation"
+05-24 15:37:19.278  7057  7057 W libc    : Access denied finding property "ro.product.brand_for_attestation"
+05-24 15:37:19.278  7057  7057 W libc    : Access denied finding property "ro.product.model_for_attestation"
+05-24 15:37:19.284  7057  7057 W libc    : Access denied finding property "ro.vendor.mtk.hbt_binfmt_misc_support"
+05-24 15:37:19.284  7057  7057 W libc    : Access denied finding property "ro.vendor.mtk.app32_boost_support"
+05-24 15:37:19.284  7057  7057 W libc    : Access denied finding property "ro.vendor.oplus.tango_binfmt_misc_support"
+05-24 15:37:19.284  7057  7057 W libc    : Access denied finding property "ro.vendor.oplus.otranslator_64only_chip"
+05-24 15:37:19.286  7057  7057 W libc    : Access denied finding property "ro.vendor.oplus.app32_boost_support"
+05-24 15:37:19.286  7057  7057 E ZygoteProcess: zygote_c init failed for zygote_c.enable property
+05-24 15:37:19.286  7057  7057 W libc    : Access denied finding property "ro.vendor.mtk.app32_boost_support"
+05-24 15:37:19.288  7057  7057 D nativeloader: Load libonetrace_jni.so using system ns (caller=/system/framework/oplus-framework.jar): ok
+05-24 15:37:19.288  7057  7057 D OplusTrace: register_android_os_OplusTrace
+05-24 15:37:19.357  7057  7057 D nativeloader: Load libframework-connectivity-tiramisu-jni.so using APEX ns com_android_tethering for caller /apex/com.android.tethering/javalib/framework-connectivity-t.jar: ok
+05-24 15:37:19.359  7057  7057 D AndroidRuntime: Calling main entry com.termux.termuxam.Am
+05-24 15:37:19.373  7057  7057 W PlatformAconfigPackage: android.os.flagging.AconfigStorageReadException: ERROR_CANNOT_READ_STORAGE_FILE: Fail to mmap storage
+05-24 15:37:19.376  7057  7057 I AconfigPackage: com.android.ipsec.flags is mapped to com.android.ipsec
+05-24 15:37:19.376  7057  7057 I AconfigPackage: android.media.swcodec.flags is mapped to com.android.media.swcodec
+05-24 15:37:19.376  7057  7057 I AconfigPackage: com.android.permission.flags is mapped to com.android.permission
+05-24 15:37:19.376  7057  7057 I AconfigPackage: com.android.permissioncontroller.flags is mapped to com.android.permission
+05-24 15:37:19.376  7057  7057 I AconfigPackage: com.android.wifi.flags is mapped to com.android.wifi
+05-24 15:37:19.377  7057  7057 I AconfigPackage: com.android.icu is mapped to com.android.i18n
+05-24 15:37:19.377  7057  7057 I AconfigPackage: com.android.adservices.ondevicepersonalization.flags is mapped to com.android.ondevicepersonalization
+05-24 15:37:19.377  7057  7057 I AconfigPackage: android.graphics.pdf.flags is mapped to com.android.mediaprovider
+05-24 15:37:19.377  7057  7057 I AconfigPackage: com.android.providers.media.flags is mapped to com.android.mediaprovider
+05-24 15:37:19.377  7057  7057 I AconfigPackage: android.graphics.pdf.flags.readonly is mapped to com.android.mediaprovider
+05-24 15:37:19.378  7057  7057 I AconfigPackage: com.android.cellbroadcastreceiver.flags is mapped to com.android.cellbroadcast
+05-24 15:37:19.378  7057  7057 I AconfigPackage: android.provider.flags is mapped to com.android.configinfrastructure
+05-24 15:37:19.378  7057  7057 I AconfigPackage: com.android.server.deviceconfig is mapped to com.android.configinfrastructure
+05-24 15:37:19.378  7057  7057 I AconfigPackage: com.android.healthfitness.flags is mapped to com.android.healthfitness
+05-24 15:37:19.379  7057  7057 I AconfigPackage: com.android.appsearch.flags is mapped to com.android.appsearch
+05-24 15:37:19.379  7057  7057 I AconfigPackage: com.android.system.virtualmachine.flags is mapped to com.android.virt
+05-24 15:37:19.379  7057  7057 I AconfigPackage: com.android.rkpd.flags is mapped to com.android.rkpd
+05-24 15:37:19.379  7057  7057 I AconfigPackage: com.android.os.statsd.flags is mapped to com.android.os.statsd
+05-24 15:37:19.380  7057  7057 I AconfigPackage: com.android.devicelock.flags is mapped to com.android.devicelock
+05-24 15:37:19.380  7057  7057 I AconfigPackage: com.android.media.extractor.flags is mapped to com.android.media
+05-24 15:37:19.380  7057  7057 I AconfigPackage: com.android.media.mainline.flags is mapped to com.android.media
+05-24 15:37:19.380  7057  7057 I AconfigPackage: com.android.adbd.flags is mapped to com.android.adbd
+05-24 15:37:19.381  7057  7057 I AconfigPackage: com.android.org.conscrypt.flags is mapped to com.android.conscrypt
+05-24 15:37:19.381  7057  7057 I AconfigPackage: com.android.org.conscrypt.net.flags is mapped to com.android.conscrypt
+05-24 15:37:19.381  7057  7057 I AconfigPackage: android.uprobestats.mainline.flags is mapped to com.android.uprobestats
+05-24 15:37:19.381  7057  7057 I AconfigPackage: android.os.profiling is mapped to com.android.profiling
+05-24 15:37:19.381  7057  7057 I AconfigPackage: com.android.tethering.mainline.beta is mapped to com.android.tethering
+05-24 15:37:19.381  7057  7057 I AconfigPackage: android.net.http is mapped to com.android.tethering
+05-24 15:37:19.381  7057  7057 I AconfigPackage: com.android.tethering.readonly.flags is mapped to com.android.tethering
+05-24 15:37:19.381  7057  7057 I AconfigPackage: android.net.vcn is mapped to com.android.tethering
+05-24 15:37:19.382  7057  7057 I AconfigPackage: com.android.net.flags is mapped to com.android.tethering
+05-24 15:37:19.382  7057  7057 I AconfigPackage: com.android.tethering.flags is mapped to com.android.tethering
+05-24 15:37:19.382  7057  7057 I AconfigPackage: com.android.tethering.beta.test is mapped to com.android.tethering
+05-24 15:37:19.382  7057  7057 I AconfigPackage: com.android.nearby.flags is mapped to com.android.tethering
+05-24 15:37:19.382  7057  7057 I AconfigPackage: com.android.net.thread.flags is mapped to com.android.tethering
+05-24 15:37:19.382  7057  7057 I AconfigPackage: com.android.net.ct.flags is mapped to com.android.tethering
+05-24 15:37:19.382  7057  7057 I AconfigPackage: com.android.uwb.flags is mapped to com.android.uwb
+05-24 15:37:19.382  7057  7057 I AconfigPackage: com.android.ranging.flags is mapped to com.android.uwb
+05-24 15:37:19.382  7057  7057 I AconfigPackage: com.android.adservices.flags is mapped to com.android.adservices
+05-24 15:37:19.382  7057  7057 I AconfigPackage: com.android.sdksandbox.flags is mapped to com.android.adservices
+05-24 15:37:19.382  7057  7057 I AconfigPackage: com.android.art.flags is mapped to com.android.art
+05-24 15:37:19.383  7057  7057 I AconfigPackage: com.android.art.rw.flags is mapped to com.android.art
+05-24 15:37:19.383  7057  7057 I AconfigPackage: com.android.libcore is mapped to com.android.art
+05-24 15:37:19.383  7057  7057 E FeatureFlagsImplExport: android.os.flagging.AconfigStorageReadException: ERROR_PACKAGE_NOT_FOUND: package android.xr cannot be found on the device
+05-24 15:37:19.425  7057  7057 I app_process: System.exit called, status: 0
+05-24 15:37:19.425  7057  7057 I AndroidRuntime: VM exiting with result code 0.
+05-24 15:37:19.444 29655 29655 D VRI[TermuxActivity]: onFocusEvent false
+05-24 15:37:19.477  7081  7081 W bash    : type=1400 audit(0.0:1751960): avc:  granted  { execute } for  name="coreutils" dev="dm-73" ino=1680741 scontext=u:r:untrusted_app_27:s0:c107,c258,c512,c768 tcontext=u:object_r:app_data_file:s0:c107,c258,c512,c768 tclass=file app=com.termux
+05-24 15:37:19.485  7081  7081 W bash    : type=1400 audit(0.0:1751961): avc:  granted  { execute } for  name="coreutils" dev="dm-73" ino=1680741 scontext=u:r:untrusted_app_27:s0:c107,c258,c512,c768 tcontext=u:object_r:app_data_file:s0:c107,c258,c512,c768 tclass=file app=com.termux
+05-24 15:37:19.485  7081  7081 W bash    : type=1400 audit(0.0:1751962): avc:  granted  { execute_no_trans } for  path="/data/data/com.termux/files/usr/bin/coreutils" dev="dm-73" ino=1680741 scontext=u:r:untrusted_app_27:s0:c107,c258,c512,c768 tcontext=u:object_r:app_data_file:s0:c107,c258,c512,c768 tclass=file app=com.termux
+05-24 15:37:19.485  7081  7081 W sleep   : type=1400 audit(0.0:1751963): avc:  granted  { execute } for  path="/data/data/com.termux/files/usr/bin/coreutils" dev="dm-73" ino=1680741 scontext=u:r:untrusted_app_27:s0:c107,c258,c512,c768 tcontext=u:object_r:app_data_file:s0:c107,c258,c512,c768 tclass=file app=com.termux
+05-24 15:37:19.493  7081  7081 W sleep   : type=1400 audit(0.0:1751964): avc:  granted  { execute } for  path="/data/data/com.termux/files/usr/lib/libandroid-support.so" dev="dm-73" ino=1680651 scontext=u:r:untrusted_app_27:s0:c107,c258,c512,c768 tcontext=u:object_r:app_data_file:s0:c107,c258,c512,c768 tclass=file app=com.termux
+05-24 15:37:19.515 29655 29655 I ImeTracker: system_server:4833fc5: onCancelled at PHASE_CLIENT_ON_CONTROLS_CHANGED
+05-24 15:37:19.988 29655 29655 I ImeTracker: system_server:d87e91a5: onCancelled at PHASE_CLIENT_ON_CONTROLS_CHANGED
+05-24 15:37:19.992 29655 29655 D VRI[TermuxActivity]: onFocusEvent true
+05-24 15:37:19.992 29655 29655 W WindowOnBackDispatcher: sendCancelIfRunning: isInProgress=false callback=ImeCallback=ImeOnBackInvokedCallback@77381537 hash=225800519 Callback=android.window.IOnBackInvokedCallback$Stub$Proxy@d31cac9
+--------- beginning of system
+05-24 15:37:20.033 29655 29655 D ActivityThread: ComponentInfo{com.termux/com.termux.app.TermuxActivity} checkFinished=false 4
+05-24 15:37:20.033 29655 29655 D ResourcesManagerExtImpl: applyConfigurationToAppResourcesLocked app.getDisplayId() return callback.displayId:0
+05-24 15:37:20.040 29655 29655 D ViewRootImplExtImpl: wrapConfigInfoIntoFlags rotation=0, smallestScreenWidthDp=354, residentWS=false, scenario=0, bounds=Rect(0, 0 - 1240, 2772), relayoutAsync=true, flags=0, newFlags=1453337664, title=com.termux/com.termux.app.TermuxActivity
+05-24 15:37:20.040 29655 29655 D VRI[TermuxActivity]: relayoutWindow result, sizeChanged:false, surfaceControlChanged:false, transformHintChanged:false, mSurfaceSize:Point(1240, 2772), mLastSurfaceSize:Point(1240, 2772), mWidth:1240, mHeight:2772, requestedWidth:1240, requestedHeight:2772, transformHint:0, installOrientation:0, displayRotation:0, isSurfaceValid:true, attr.flag:-1920925440, tmpFrames:ClientWindowFrames{frame=[0,0][1240,2772] display=[0,0][1240,2772] parentFrame=[0,0][1240,2772]}, relayoutAsync:true, mSyncSeqId:0
+05-24 15:37:20.040 29655 29655 W VRI[TermuxActivity]: updateBlastSurfaceIfNeeded, surfaceSize:Point(1240, 2772), lastSurfaceSize:Point(1240, 2772), format:-1, blastBufferQueue:android.graphics.BLASTBufferQueue@e8deec9
+05-24 15:37:20.041 29655 29655 I SurfaceControl:  setExtendedRangeBrightness sc=Surface(name=com.termux/com.termux.app.TermuxActivity)/@0xad077b,currentBufferRatio=1.0,desiredRatio=1.0
+05-24 15:37:20.066 29655 29655 D VRI[TermuxActivity]: onFocusEvent false
+05-24 15:37:20.086 29655 29655 D VRI[TermuxActivity]: onFocusEvent true
+05-24 15:37:20.086 29655 29655 W WindowOnBackDispatcher: sendCancelIfRunning: isInProgress=false callback=ImeCallback=ImeOnBackInvokedCallback@77381537 hash=225800519 Callback=android.window.IOnBackInvokedCallback$Stub$Proxy@d31cac9
+05-24 15:37:20.335 29655 29655 I ImeTracker: com.termux:bae3507f: onRequestShow at ORIGIN_CLIENT reason SHOW_SOFT_INPUT fromUser false
+05-24 15:37:20.335 29655 29655 D InsetsController: show(ime(), fromIme=false)
+05-24 15:37:20.335 29655 29655 I ImeTracker: com.termux:bae3507f: onCancelled at PHASE_CLIENT_APPLY_ANIMATION
+05-24 15:37:20.459 29655 29655 D ResourcesManagerExtImpl: applyConfigurationToAppResourcesLocked app.getDisplayId() return callback.displayId:0
+05-24 15:37:21.091 29655 29682 D OplusScrollToTopManager: com.termux/com.termux.app.TermuxActivity,This com.android.internal.policy.DecorView{28ec715 V.E...... R....... 0,0-1240,2772 alpha=1.0 viewInfo = }[TermuxActivity] change focus to true
+05-24 15:37:22.517  7151  7151 W bash    : type=1400 audit(0.0:1751971): avc:  granted  { execute } for  name="logcat" dev="dm-73" ino=2003506 scontext=u:r:untrusted_app_27:s0:c107,c258,c512,c768 tcontext=u:object_r:app_data_file:s0:c107,c258,c512,c768 tclass=file app=com.termux
+05-24 15:37:22.517  7151  7151 W bash    : type=1400 audit(0.0:1751972): avc:  granted  { execute } for  name="dash" dev="dm-73" ino=2002697 scontext=u:r:untrusted_app_27:s0:c107,c258,c512,c768 tcontext=u:object_r:app_data_file:s0:c107,c258,c512,c768 tclass=file app=com.termux
+05-24 15:37:22.517  7151  7151 W bash    : type=1400 audit(0.0:1751973): avc:  granted  { execute_no_trans } for  path="/data/data/com.termux/files/usr/bin/dash" dev="dm-73" ino=2002697 scontext=u:r:untrusted_app_27:s0:c107,c258,c512,c768 tcontext=u:object_r:app_data_file:s0:c107,c258,c512,c768 tclass=file app=com.termux
+05-24 15:37:22.517  7151  7151 W sh      : type=1400 audit(0.0:1751974): avc:  granted  { execute } for  path="/data/data/com.termux/files/usr/bin/dash" dev="dm-73" ino=2002697 scontext=u:r:untrusted_app_27:s0:c107,c258,c512,c768 tcontext=u:object_r:app_data_file:s0:c107,c258,c512,c768 tclass=file app=com.termux
+05-24 15:37:22.529  7151  7151 W sh      : type=1400 audit(0.0:1751975): avc:  granted  { execute } for  path="/data/data/com.termux/files/usr/lib/libtermux-exec-ld-preload.so" dev="dm-73" ino=2003322 scontext=u:r:untrusted_app_27:s0:c107,c258,c512,c768 tcontext=u:object_r:app_data_file:s0:c107,c258,c512,c768 tclass=file app=com.termux
