@@ -53,7 +53,6 @@ fun MainScreen(
     val logs by viewModel.logs.collectAsState()
     val isServerOnline by viewModel.isServerOnline.collectAsState()
     val isLocalDemoActive by viewModel.isLocalDemoActive.collectAsState()
-    val fleetBots by viewModel.bots.collectAsState()
 
     val cyberGridModifier = modifier
         .fillMaxSize()
