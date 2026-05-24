@@ -1,0 +1,6 @@
+{
+  "name": "Velocity Terminal",
+  "description": "Premium multi-pair algorithmic trading bot with real-time tracking, risk management thresholds, and advanced visual simulation cockpit.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
