@@ -152,15 +152,15 @@ fun MainScreen(
                             Box(
                                 modifier = Modifier
                                     .size(6.dp)
-                                    .background(TradeGreen.copy(alpha = liveDotAlpha), shape = CircleShape)
-                                    .border(1.dp, TradeGreen, shape = CircleShape)
+                                    .background(if (isLocalDemoActive) TechCyan.copy(alpha = liveDotAlpha) else TradeGreen.copy(alpha = liveDotAlpha), shape = CircleShape)
+                                    .border(1.dp, if (isLocalDemoActive) TechCyan else TradeGreen, shape = CircleShape)
                             )
                             Text(
-                                text = "Live: $124,592.00",
-                                fontSize = 11.sp,
+                                text = if (isLocalDemoActive) "SIMULACIÓN" else if (isServerOnline) "REAL: ONLINE" else "OFFLINE",
+                                fontSize = 10.sp,
                                 fontWeight = FontWeight.Bold,
                                 fontFamily = FontFamily.Monospace,
-                                color = TextPrimary
+                                color = if (isLocalDemoActive) TechCyan else if (isServerOnline) TradeGreen else TradeRed
                             )
                         }
                     }
@@ -270,7 +270,8 @@ fun MainScreen(
                     )
                     1 -> BilleteraTab(
                         balances = balances,
-                        trades = trades
+                        trades = trades,
+                        onNavigateToConfig = { selectedTab = 3 }
                     )
                     2 -> OperacionesTab(
                         status = status,
@@ -575,7 +576,8 @@ fun DashboardTab(
 @Composable
 fun BilleteraTab(
     balances: Map<String, Double>,
-    trades: List<ActiveTrade>
+    trades: List<ActiveTrade>,
+    onNavigateToConfig: () -> Unit
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -606,7 +608,18 @@ fun BilleteraTab(
                             .border(1.dp, SurfaceBorder, RoundedCornerShape(12.dp)),
                         contentAlignment = Alignment.Center
                     ) {
-                        Text("No se encontraron saldos", color = TextSecondary)
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text("No se han enlazado llaves API de Exchange", color = TextSecondary, fontSize = 12.sp)
+                            Spacer(modifier = Modifier.height(12.dp))
+                            Button(
+                                onClick = { onNavigateToConfig() },
+                                colors = ButtonDefaults.buttonColors(containerColor = TechCyan.copy(alpha = 0.2f), contentColor = TechCyan),
+                                border = BorderStroke(1.dp, TechCyan),
+                                shape = RoundedCornerShape(8.dp)
+                            ) {
+                                Text("CONECTAR AHORA", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                            }
+                        }
                     }
                 } else {
                     Row(
@@ -1387,6 +1400,12 @@ fun ConfigTab(
                             unfocusedBorderColor = SurfaceBorder
                         )
                     )
+                    Text(
+                        "Si usas un celular real, usa la IP de tu PC (ej: http://192.168.1.15:8080)",
+                        fontSize = 10.sp,
+                        color = TechCyan,
+                        modifier = Modifier.padding(top = 4.dp, bottom = 4.dp)
+                    )
 
                     Row(
                         modifier = Modifier
@@ -1754,6 +1773,24 @@ fun ConfigTab(
                             fontSize = 11.sp,
                             color = TextSecondary
                         )
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    Button(
+                        onClick = { 
+                            keyboardController?.hide()
+                            viewModel.saveConfiguration() 
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = TradeGreen, contentColor = BackgroundDark),
+                        shape = RoundedCornerShape(8.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(44.dp)
+                    ) {
+                        Icon(imageVector = Icons.Default.Save, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("GUARDAR LLAVES Y ACTIVAR MODO REAL", fontSize = 12.sp, fontWeight = FontWeight.ExtraBold)
                     }
                 }
             }

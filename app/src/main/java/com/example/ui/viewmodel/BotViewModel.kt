@@ -1,6 +1,7 @@
 package com.example.ui.viewmodel
-
-import androidx.lifecycle.ViewModel
+import android.app.Application
+import android.content.Context
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.data.*
 import kotlinx.coroutines.Job
@@ -13,14 +14,17 @@ import java.text.SimpleDateFormat
 import java.util.*
 import kotlin.random.Random
 
-class BotViewModel : ViewModel() {
+class BotViewModel(application: Application) : AndroidViewModel(application) {
+
+    private val prefs = application.getSharedPreferences("bot_prefs", Context.MODE_PRIVATE)
 
     // Network & URL state
-    private val _baseUrl = MutableStateFlow("http://10.0.2.2:8080")
+    private val _baseUrl = MutableStateFlow(prefs.getString("base_url", "http://10.0.2.2:8080") ?: "http://10.0.2.2:8080")
     val baseUrl: StateFlow<String> = _baseUrl.asStateFlow()
 
-    // Core Trading States
-    private val _status = MutableStateFlow<BotStatus?>(null)
+    // Key configuration inputs
+    val apiKeyValue = MutableStateFlow(prefs.getString("api_key", "") ?: "")
+    val apiSecretValue = MutableStateFlow(prefs.getString("api_secret", "") ?: "")
     val status: StateFlow<BotStatus?> = _status.asStateFlow()
 
     private val _balances = MutableStateFlow<Map<String, Double>>(emptyMap())
@@ -429,6 +433,12 @@ class BotViewModel : ViewModel() {
     }
 
     fun saveConfiguration() {
+        prefs.edit().apply {
+            putString("api_key", apiKeyValue.value)
+            putString("api_secret", apiSecretValue.value)
+            putString("base_url", _baseUrl.value)
+            apply()
+        }
         viewModelScope.launch {
             val update = BotConfigUpdate(
                 apiKey = apiKeyValue.value,
