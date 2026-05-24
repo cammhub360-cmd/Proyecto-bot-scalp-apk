@@ -1,7 +1,6 @@
 package com.example.data
 
 import com.squareup.moshi.Moshi
-import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
@@ -46,7 +45,6 @@ interface BotApiService {
                 .build()
 
             val moshi = Moshi.Builder()
-                .add(KotlinJsonAdapterFactory())
                 .build()
 
             val normalizedUrl = if (baseUrl.endsWith("/")) baseUrl else "$baseUrl/"

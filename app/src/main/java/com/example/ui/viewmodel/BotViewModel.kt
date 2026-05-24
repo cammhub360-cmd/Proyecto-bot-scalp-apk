@@ -152,7 +152,7 @@ class BotViewModel(application: Application) : AndroidViewModel(application) {
                 } else {
                     handleConnectionFailure("Servidor no responde")
                 }
-            } catch (e: Exception) {
+            } catch (e: Throwable) {
                 handleConnectionFailure(e.localizedMessage ?: "Fallo de conexión")
             } finally {
                 _isConnecting.value = false
@@ -199,7 +199,7 @@ class BotViewModel(application: Application) : AndroidViewModel(application) {
                     _trades.value = tr
                     _logs.value = lg
                     _isServerOnline.value = true
-                } catch (e: Exception) {
+                } catch (e: Throwable) {
                     _isServerOnline.value = false
                     addSimulatedLog("ERROR", "Servidor API desconectado durante polling: ${e.localizedMessage}")
                     _isLocalDemoActive.value = true
@@ -403,7 +403,7 @@ class BotViewModel(application: Application) : AndroidViewModel(application) {
                 try {
                     apiService?.startBot()
                     addSimulatedLog("INFO", "Iniciando bot real por comando REST...")
-                } catch (e: Exception) {
+                } catch (e: Throwable) {
                     addSimulatedLog("ERROR", "No se pudo arrancar el bot remoto: ${e.localizedMessage}")
                 }
             }
@@ -422,7 +422,7 @@ class BotViewModel(application: Application) : AndroidViewModel(application) {
                 try {
                     apiService?.stopBot()
                     addSimulatedLog("WARN", "Deteniendo bot real por comando REST...")
-                } catch (e: Exception) {
+                } catch (e: Throwable) {
                     addSimulatedLog("ERROR", "No se pudo detener el bot remoto: ${e.localizedMessage}")
                 }
             }
@@ -466,7 +466,7 @@ class BotViewModel(application: Application) : AndroidViewModel(application) {
                     if (updatedStatus != null) {
                         _status.value = updatedStatus
                     }
-                } catch (e: Exception) {
+                } catch (e: Throwable) {
                     addSimulatedLog("ERROR", "Fallo al subir configuración al host: ${e.localizedMessage}")
                 }
             }
