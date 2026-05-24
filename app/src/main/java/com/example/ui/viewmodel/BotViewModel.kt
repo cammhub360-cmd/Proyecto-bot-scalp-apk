@@ -236,7 +236,7 @@ class BotViewModel(application: Application) : AndroidViewModel(application) {
                                 symbol = pair, type = "BUY", amount = amount, entryPrice = price,
                                 currentPrice = price, highestPrice = price, tpPrice = price * (1.0 + takeProfitPercent.value/100.0),
                                 tsPrice = price * (1.0 - trailingStopPercent.value/100.0), valueUsd = orderAmountUsd.value,
-                                profitPercent = 0.0, timestamp = System.currentTimeMillis()
+                                profitPercent = 0.0, timestamp = System.currentTimeMillis().toDouble()
                             ))
                             addSimulatedLog("BUY", "Compra automática: $pair @ $${String.format(java.util.Locale.US, "%.2f", price)}")
                         }
@@ -293,8 +293,8 @@ class BotViewModel(application: Application) : AndroidViewModel(application) {
         tp: Double,
         ts: Double,
         sl: Double,
-        leverage: Int,
-        maxConcurrent: Int,
+        lev: Int,
+        maxTrades: Int,
         pairs: List<String>
     ) {
         // Legacy support stub
