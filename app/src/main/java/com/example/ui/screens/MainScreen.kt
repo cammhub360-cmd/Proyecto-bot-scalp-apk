@@ -512,7 +512,7 @@ fun DashboardTab(
                         // Scalper switch
                         Button(
                             onClick = {
-                                if (status?.isRunning == true) viewModel.stopBot() else viewModel.startBot()
+                                viewModel.toggleBot()
                             },
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = if (status?.isRunning == true) TradeRed else TechCobalt,
@@ -562,12 +562,19 @@ fun DashboardTab(
             }
         }
 
-        // BOT PERFORMANCE & FLEET OPERATIONS (From HTML reference Page 1 & 4)
+        // BOT PERFORMANCE (Simplified)
         item {
-            FleetOperationsSection(
-                fleetBots = fleetBots,
-                viewModel = viewModel
-            )
+            Card(
+                colors = CardDefaults.cardColors(containerColor = SurfaceSlate),
+                shape = RoundedCornerShape(12.dp),
+                border = BorderStroke(1.dp, SurfaceBorder)
+            ) {
+                Column(modifier = Modifier.padding(14.dp)) {
+                    Text("RESUMEN DE RENDIMIENTO", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = TextSecondary)
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text("Modo de ejecución: ${if (status?.isMockMode == true) "Simulación" else "Real (Producción)"}", color = TextPrimary, fontSize = 12.sp)
+                }
+            }
         }
     }
 }

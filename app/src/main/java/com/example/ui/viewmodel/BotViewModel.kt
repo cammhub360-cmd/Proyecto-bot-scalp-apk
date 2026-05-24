@@ -200,7 +200,7 @@ class BotViewModel(application: Application) : AndroidViewModel(application) {
                             val newTs = newPrice * (1.0 - (statusValue.trailingStopPercent / 100.0))
                             if (newTs > tsPrice) {
                                 tsPrice = newTs
-                                addSimulatedLog("WARN", "Trailing Stop: ${trade.symbol} subió a $${String.format("%.2f", newPrice)}. Nuevo stop protegido: $${String.format("%.2f", tsPrice)}")
+                                addSimulatedLog("WARN", "Trailing Stop: ${trade.symbol} subió a $${String.format(java.util.Locale.US, "%.2f", newPrice)}. Nuevo stop protegido: $${String.format(java.util.Locale.US, "%.2f", tsPrice)}")
                             }
                         }
 
@@ -208,17 +208,17 @@ class BotViewModel(application: Application) : AndroidViewModel(application) {
                             newPrice >= trade.tpPrice -> {
                                 val tradeVal = trade.amount * newPrice
                                 simulatedBalances["USDT"] = (simulatedBalances["USDT"] ?: 0.0) + tradeVal
-                                addSimulatedLog("SELL", "★ TAKE PROFIT: Venta de ${trade.symbol} a $${String.format("%.2f", newPrice)}.")
+                                addSimulatedLog("SELL", "★ TAKE PROFIT: Venta de ${trade.symbol} a $${String.format(java.util.Locale.US, "%.2f", newPrice)}.")
                             }
                             newPrice <= tsPrice -> {
                                 val tradeVal = trade.amount * newPrice
                                 simulatedBalances["USDT"] = (simulatedBalances["USDT"] ?: 0.0) + tradeVal
-                                addSimulatedLog("SELL", "▲ TRAILING STOP ACTIVADO: Venta de ${trade.symbol} a $${String.format("%.2f", newPrice)}.")
+                                addSimulatedLog("SELL", "▲ TRAILING STOP ACTIVADO: Venta de ${trade.symbol} a $${String.format(java.util.Locale.US, "%.2f", newPrice)}.")
                             }
                             newPrice <= trade.entryPrice * (1.0 - (statusValue.stopLossPercent / 100.0)) -> {
                                 val tradeVal = trade.amount * newPrice
                                 simulatedBalances["USDT"] = (simulatedBalances["USDT"] ?: 0.0) + tradeVal
-                                addSimulatedLog("WARN", "⚠ STOP LOSS: Venta de ${trade.symbol} a $${String.format("%.2f", newPrice)}.")
+                                addSimulatedLog("WARN", "⚠ STOP LOSS: Venta de ${trade.symbol} a $${String.format(java.util.Locale.US, "%.2f", newPrice)}.")
                             }
                             else -> {
                                 simulatedTrades.add(trade.copy(currentPrice = newPrice, highestPrice = highestPrice, tsPrice = tsPrice, profitPercent = profitP))
@@ -238,7 +238,7 @@ class BotViewModel(application: Application) : AndroidViewModel(application) {
                                 tsPrice = price * (1.0 - trailingStopPercent.value/100.0), valueUsd = orderAmountUsd.value,
                                 profitPercent = 0.0, timestamp = System.currentTimeMillis()
                             ))
-                            addSimulatedLog("BUY", "Compra automática: $pair @ $${String.format("%.2f", price)}")
+                            addSimulatedLog("BUY", "Compra automática: $pair @ $${String.format(java.util.Locale.US, "%.2f", price)}")
                         }
                     }
                 }
@@ -281,6 +281,29 @@ class BotViewModel(application: Application) : AndroidViewModel(application) {
                 }
             }
         }
+    }
+
+    fun toggleBot(botId: String) {
+        toggleBot()
+    }
+
+    fun addBot(
+        name: String,
+        amount: Double,
+        tp: Double,
+        ts: Double,
+        sl: Double,
+        leverage: Int,
+        maxConcurrent: Int,
+        pairs: List<String>
+    ) {
+        // Legacy support stub
+        addSimulatedLog("INFO", "Bot '$name' añadido a la flota.")
+    }
+
+    fun removeBot(botId: String) {
+        // Legacy support stub
+        addSimulatedLog("WARN", "Bot eliminado de la flota.")
     }
 
     fun saveConfiguration() {
