@@ -51,8 +51,6 @@ fun MainScreen(
     val balances by viewModel.balances.collectAsState()
     val trades by viewModel.trades.collectAsState()
     val logs by viewModel.logs.collectAsState()
-    val baseUrl by viewModel.baseUrl.collectAsState()
-    val isConnecting by viewModel.isConnecting.collectAsState()
     val isServerOnline by viewModel.isServerOnline.collectAsState()
     val isLocalDemoActive by viewModel.isLocalDemoActive.collectAsState()
     val fleetBots by viewModel.bots.collectAsState()
@@ -279,9 +277,7 @@ fun MainScreen(
                     )
                     3 -> ConfigTab(
                         status = status,
-                        baseUrl = baseUrl,
-                        viewModel = viewModel,
-                        isConnecting = isConnecting
+                        viewModel = viewModel
                     )
                     4 -> LogsTab(
                         logs = logs
@@ -1349,13 +1345,8 @@ fun ActiveTradeCard(trade: ActiveTrade) {
 @Composable
 fun ConfigTab(
     status: com.example.data.BotStatus?,
-    baseUrl: String,
-    viewModel: BotViewModel,
-    isConnecting: Boolean
+    viewModel: BotViewModel
 ) {
-    var editBaseUrl by remember { mutableStateOf(baseUrl) }
-    
-    // Config form states tied to VM inputs
     val apiKey by viewModel.apiKeyValue.collectAsState()
     val apiSecret by viewModel.apiSecretValue.collectAsState()
     val orderAmt by viewModel.orderAmountUsd.collectAsState()
