@@ -67,6 +67,43 @@ data class BotConfigUpdate(
 )
 
 @JsonClass(generateAdapter = true)
+data class BotConfigDb(
+    @Json(name = "id") val id: Int,
+    @Json(name = "is_active") val isActive: Boolean,
+    @Json(name = "binance_api_key") val binanceApiKey: String?,
+    @Json(name = "binance_secret_key") val binanceSecretKey: String?,
+    @Json(name = "investment_per_trade") val investmentPerTrade: Double,
+    @Json(name = "selected_pairs") val selectedPairs: List<String>
+)
+
+@JsonClass(generateAdapter = true)
+data class BotConfigUpdateDb(
+    @Json(name = "is_active") val isActive: Boolean? = null,
+    @Json(name = "binance_api_key") val binanceApiKey: String? = null,
+    @Json(name = "binance_secret_key") val binanceSecretKey: String? = null,
+    @Json(name = "investment_per_trade") val investmentPerTrade: Double? = null,
+    @Json(name = "selected_pairs") val selectedPairs: List<String>? = null
+)
+
+@JsonClass(generateAdapter = true)
+data class BotConfigRecord(
+    @Json(name = "id") val id: Int,
+    @Json(name = "is_active") val isActive: Boolean,
+    @Json(name = "binance_api_key") val binanceApiKey: String?,
+    @Json(name = "binance_secret_key") val binanceSecretKey: String?,
+    @Json(name = "investment_per_trade") val investmentPerTrade: Double,
+    @Json(name = "selected_pairs") val selectedPairs: List<String>
+)
+
+@JsonClass(generateAdapter = true)
+data class BotConfigPatch(
+    @Json(name = "is_active") val isActive: Boolean? = null,
+    @Json(name = "binance_api_key") val binanceApiKey: String? = null,
+    @Json(name = "binance_secret_key") val binanceSecretKey: String? = null,
+    @Json(name = "investment_per_trade") val investmentPerTrade: Double? = null
+)
+
+@JsonClass(generateAdapter = true)
 data class GenericResponse(
     @Json(name = "status") val status: String,
     @Json(name = "message") val message: String

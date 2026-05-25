@@ -20,7 +20,7 @@ class BotViewModel(application: Application) : AndroidViewModel(application) {
     private val prefs = application.getSharedPreferences("bot_prefs", Context.MODE_PRIVATE)
 
     // InsForge Credentials
-    private val INSFORGE_API_KEY = "ik_2a55ab09c8ca9cf17de40d97310225db" // Service Key for autonomous op
+    private val INSFORGE_API_KEY = "ik_2a55ab09c8ca9cf17de40d97310225db"
     private val INSFORGE_BEARER = "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3OC0xMjM0LTU2NzgtOTBhYi1jZGVmMTIzNDU2NzgiLCJlbWFpbCI6ImFub25AaW5zZm9yZ2UuY29tIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg4NTgzNjB9.ZHOPUJ6yu8oK7sd2bcw402a150aJg9biWwLoCS2i-tY"
 
     // Key configuration inputs
@@ -96,22 +96,21 @@ class BotViewModel(application: Application) : AndroidViewModel(application) {
             val configs = insForgeApi.getBotConfig(INSFORGE_API_KEY, INSFORGE_BEARER)
             if (configs.isNotEmpty()) {
                 val config = configs.first()
-                val isRunning = config["is_active"] as? Boolean ?: false
                 
-                // Fetch dynamic data
                 val openTrades = insForgeApi.getOpenPositions(INSFORGE_API_KEY, INSFORGE_BEARER)
                 val systemLogs = insForgeApi.getLogs(INSFORGE_API_KEY, INSFORGE_BEARER)
                 
                 _status.value = _status.value?.copy(
-                    isRunning = isRunning,
-                    isMockMode = false
+                    isRunning = config.isActive,
+                    isMockMode = false,
+                    orderAmountUsd = config.investmentPerTrade,
+                    selectedPairs = config.selectedPairs,
+                    activePairCount = config.selectedPairs.size
                 )
                 _trades.value = openTrades
                 _logs.value = systemLogs
                 _isServerOnline.value = true
-                
-                // Mock balances for UI if not available from InsForge yet
-                _balances.value = simBalances.toMap()
+                _balances.value = simBalances.toMap() // Mock balances for now
             }
         } catch (e: Exception) {
             _isServerOnline.value = false
@@ -128,10 +127,10 @@ class BotViewModel(application: Application) : AndroidViewModel(application) {
                 val newPrice = t.currentPrice * (1.0 + change)
                 if (newPrice >= t.tpPrice) {
                     simBalances["USDT"] = (simBalances["USDT"] ?: 0.0) + (t.amount * newPrice)
-                    addLocalLog("SELL", "★ TP ALCANZADO: Venta ${t.symbol} @ ${String.format("%.2f", newPrice)}")
+                    addLocalLog("SELL", "★ TP ALCANZADO: Venta ${t.symbol} @ ${String.format(java.util.Locale.US, "%.2f", newPrice)}")
                 } else if (newPrice <= t.tsPrice) {
                     simBalances["USDT"] = (simBalances["USDT"] ?: 0.0) + (t.amount * newPrice)
-                    addLocalLog("SELL", "▲ TS ACTIVADO: Venta ${t.symbol} @ ${String.format("%.2f", newPrice)}")
+                    addLocalLog("SELL", "▲ TS ACTIVADO: Venta ${t.symbol} @ ${String.format(java.util.Locale.US, "%.2f", newPrice)}")
                 } else {
                     nextTrades.add(t.copy(currentPrice = newPrice, profitPercent = ((newPrice - t.entryPrice) / t.entryPrice) * 100.0))
                 }
@@ -145,7 +144,7 @@ class BotViewModel(application: Application) : AndroidViewModel(application) {
                 val amt = orderAmountUsd.value / price
                 simBalances["USDT"] = (simBalances["USDT"] ?: 0.0) - orderAmountUsd.value
                 simTrades.add(ActiveTrade(p, "BUY", amt, price, price, price, price * 1.011, price * 0.995, orderAmountUsd.value, 0.0, System.currentTimeMillis().toDouble()))
-                addLocalLog("BUY", "Compra Sim: $p @ ${String.format("%.2f", price)}")
+                addLocalLog("BUY", "Compra Sim: $p @ ${String.format(java.util.Locale.US, "%.2f", price)}")
             }
         }
         _balances.value = simBalances.toMap()
@@ -168,7 +167,7 @@ class BotViewModel(application: Application) : AndroidViewModel(application) {
         if (!_isLocalDemoActive.value) {
             viewModelScope.launch {
                 try {
-                    insForgeApi.updateBotConfig(INSFORGE_API_KEY, INSFORGE_BEARER, "1", mapOf("is_active" to next))
+                    insForgeApi.updateBotConfig(INSFORGE_API_KEY, INSFORGE_BEARER, "eq.1", BotConfigPatch(isActive = next))
                     addLocalLog("INFO", "Comando enviado a InsForge: ${if (next) "INICIAR" else "DETENER"}")
                 } catch (e: Exception) {
                     addLocalLog("ERROR", "Error al enviar comando: ${e.localizedMessage}")
@@ -196,10 +195,10 @@ class BotViewModel(application: Application) : AndroidViewModel(application) {
         if (!_isLocalDemoActive.value) {
             viewModelScope.launch {
                 try {
-                    insForgeApi.updateBotConfig(INSFORGE_API_KEY, INSFORGE_BEARER, "1", mapOf(
-                        "binance_api_key" to apiKeyValue.value,
-                        "binance_secret_key" to apiSecretValue.value,
-                        "investment_per_trade" to orderAmountUsd.value
+                    insForgeApi.updateBotConfig(INSFORGE_API_KEY, INSFORGE_BEARER, "eq.1", BotConfigPatch(
+                        binanceApiKey = apiKeyValue.value,
+                        binanceSecretKey = apiSecretValue.value,
+                        investmentPerTrade = orderAmountUsd.value
                     ))
                     addLocalLog("INFO", "Configuración sincronizada con InsForge Backend.")
                 } catch (e: Exception) {
@@ -215,4 +214,5 @@ class BotViewModel(application: Application) : AndroidViewModel(application) {
     fun toggleBot(id: String) = toggleBot()
     fun addBot(name: String, amount: Double, tp: Double, ts: Double, sl: Double, lev: Int, maxTrades: Int, pairs: List<String>) {}
     fun removeBot(id: String) {}
+}
 }

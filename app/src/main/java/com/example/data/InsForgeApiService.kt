@@ -15,14 +15,14 @@ interface InsForgeApiService {
         @Header("apikey") apiKey: String,
         @Header("Authorization") bearer: String,
         @Query("select") select: String = "*"
-    ): List<Map<String, Any>>
+    ): List<BotConfigDb>
 
     @PATCH("api/database/records/bot_config")
     suspend fun updateBotConfig(
         @Header("apikey") apiKey: String,
         @Header("Authorization") bearer: String,
-        @Query("id") id: String, // Note: Use filter query format if needed
-        @Body config: Map<String, Any>
+        @Query("id") idFilter: String, // format: "eq.1"
+        @Body config: BotConfigUpdateDb
     )
 
     @GET("api/database/records/open_positions")
