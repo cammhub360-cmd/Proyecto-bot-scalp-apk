@@ -33,7 +33,7 @@ jobs:
         run: base64 -d debug.keystore.base64 > debug.keystore
 
       - name: Build with Gradle
-        run: gradle assembleDebug
+        run: chmod +x gradlew && ./gradlew assembleDebug
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
