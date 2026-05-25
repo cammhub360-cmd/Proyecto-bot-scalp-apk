@@ -33,6 +33,8 @@ jobs:
         run: base64 -d debug.keystore.base64 > debug.keystore
 
       - name: Build with Gradle
+        env:
+          ANDROID_HOME: /usr/local/lib/android/sdk
         run: chmod +x gradlew && ./gradlew assembleDebug
 
       - name: Upload APK
